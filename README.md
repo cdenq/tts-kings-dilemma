@@ -1,4 +1,6 @@
-# Tofu King's Dilemma
+<img src="assets/tofu.png" width="100">
+
+# King's Dilemma (Remaster)
 
 Scripts and custom art for my remaster of the [*The King's Dilemma*](https://steamcommunity.com/sharedfiles/filedetails/?id=3832723951) mod for Tabletop Simulator on Steam.
 
