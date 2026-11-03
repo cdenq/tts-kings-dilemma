@@ -47,10 +47,9 @@ VOTE_TAGS = {"AYE", "NAY", "PASS"}
 is stored in board-local units and the zone is put back with positionToWorld
 whenever the board comes to rest.
 
-CAPTURE holds WORLD positions read off the table, verbatim. To re-capture after
-moving a zone by hand, paste the new positions here and push without turning
-the board in between: a changed CAPTURE forces a fresh calibration, measured
-against the board's rotation at that moment. ]]
+CAPTURE holds world positions read off the table as-is. Any change to it forces
+a fresh calibration against the board's rotation at that moment, so new
+positions are only valid if the board hasn't turned since they were read. ]]
 CAPTURE = {
 	board = {0.00, 1.47, -42.39},
 	zones = {
@@ -61,8 +60,8 @@ CAPTURE = {
 }
 ZONE_ROLES = {"coins", "card", "power"}
 
--- Zone GUIDs by role. Leave blank to have calibration find the scripting
--- zone sitting at the CAPTURE position; the GUID it finds is saved.
+-- Zone GUIDs by role. A blank one is found by calibration (the scripting zone
+-- at its CAPTURE position), and the GUID it finds is saved.
 ZONE_GUIDS = {coins = "", card = "", power = ""}
 FIND_TOLERANCE = 0.1   -- world units between a zone and its CAPTURE position
 
@@ -157,8 +156,8 @@ function nameColor(name)
 end
 
 --[[ Recolour only once the field loses focus (selected == false). editInput
-rebuilds the field from its stored value, so calling it mid-typing -- as the
-first letter turns the grey placeholder white -- threw that letter away. ]]
+rebuilds the field from its stored value, so calling it mid-typing (when the
+first letter turns the grey placeholder white) threw that letter away. ]]
 function onNameEdit(_, _, value, selected)
 	houseName = value
 	if not selected then
@@ -211,9 +210,9 @@ function zoneFor(role)
 end
 
 --[[ Make zoneGuids[role] a zone this board owns. An unowned zone (memo blank)
-is claimed; one owned by another board -- what a copy inherits from the board
-it was copied from -- is left alone and a new zone of the same size spawned on
-this board instead. Boards load one at a time, so the first to reach an
+is claimed. One owned by another board (what a copy inherits from the board
+it was copied from) is left alone, and a new zone of the same size is spawned
+on this board instead. Boards load one at a time, so the first to reach an
 unowned zone gets it. ]]
 function claimZone(role)
 	local me = self.getGUID()
@@ -250,7 +249,7 @@ function repositionZones()
 	end
 	if #missing > 0 then
 		printToAll("Player Board: no scripting zone found for " .. table.concat(missing, ", ") ..
-			" -- put its GUID in ZONE_GUIDS.", {1, 0.8, 0.3})
+			"; its GUID can be set in ZONE_GUIDS.", {1, 0.8, 0.3})
 	end
 end
 
@@ -437,7 +436,7 @@ function payModCoin()
 	local coins = zoneFor("coins")
 	local guid = bag and findCoinInBag(bag)
 	if guid == nil or coins == nil then
-		printToAll("Player Board: couldn't pay " .. claimantName() .. "'s Moderator coin -- " ..
+		printToAll("Player Board: couldn't pay " .. claimantName() .. "'s Moderator coin: " ..
 			(bag == nil and ("source bag " .. SOURCE_BAG_GUID .. " is missing") or
 			 coins == nil and "no coins zone" or "no 1-Gold coin in the source bag") .. ".", {1, 0.8, 0.3})
 		return

@@ -608,7 +608,7 @@ each step so stacks that split or merge along the way don't matter. Steps:
   move    a piece from the Balance to pos
   destroy a piece in the Balance (it's being broken down)
   mint    a new piece at pos, cloned out of the source bag and the original
-          put back, so the bag keeps its stock -- as the Change Converter does.
+          put back, so the bag keeps its stock (as the Change Converter does).
 One at a time: takeObject is async, and many at once against one bag drops
 pieces. ]]
 function runStep(pool, bag, steps, i, done)

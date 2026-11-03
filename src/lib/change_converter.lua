@@ -1,52 +1,37 @@
---[[ Change Converter: make change and consolidate coins and Power.
-
-Shared by every in-game bag nicknamed "Change Converter" (305b4a, 7e0944,
-c0a478, 6eafd0); each one's file in src/change_converter/ includes this.
-Edit here, then `python master_sync.py push` and save & play.
-
-LAYOUT
+--[[ Change Converter: makes change and consolidates coins and Power.
+Shared by the four bags nicknamed "Change Converter" (305b4a, 7e0944, c0a478,
+6eafd0); each one's file in src/change_converter/ includes this.
 
   [   +1 Coin  ]            [ +1 Power ]      row 0, above the bag
-  [ Break-down ]            [ Cash-up ]       row 1, flanking the bag
+  [ Break-down ]            [ Cash-up ]       row 1, either side of the bag
   [    Gold: 0   ][   Power: 0   ]             row 2, one total per kind
 
-WHAT IT DOES
+The totals are recounted from what's in the bag on every change (recount()),
+so they always match its contents. A piece counts if it's tagged "Gold" or
+"Power" and its GM Notes are a positive number, the same reading zoneTotal()
+in player_board.lua uses. Gold and Power never convert into each other.
 
-An item that enters the bag is counted, not stored as a number: COUNTS is
-rebuilt from the bag's real contents on every change (recount()), so the
-display cannot drift from what is actually inside. An item belongs to a KIND
-by its tag ("Gold" or "Power") and its GMNotes parse as a positive number --
-the same convention goldDenominations() in global.lua and zoneTotal() in
-player_board.lua already read.
-
-Each kind converts within its own tree; gold never turns into Power.
-
-  Cash-up     consolidate into the FEWEST pieces: 7 Nibs -> 1 Shard + 2 Nibs.
+  Cash-up     the fewest pieces for the same value: 7 Nibs -> 1 Shard + 2 Nibs.
               Greedy largest-first, which is exact for both denomination sets.
-  Break-down  split each piece into its kind's authored spread in `breakdown`:
-              a Dragon(25) -> 10, 5, 5 and 5x 1. 1s cannot break and are
-              left alone.
+  Break-down  each piece becomes its entry in `breakdown`, e.g. a Dragon (25)
+              -> 10, 5, 5 and 5x 1. 1s stay as they are.
 
-Both consume everything they convert and lay the result out in front.
+Both empty the bag and lay the result out in front of it.
 
-  +1 Coin     mint one 1-Gold coin into the clicking player's coins zone.
-  +1 Power    mint one 1-Power into the clicking player's power zone.
-              "Their board" is the Player Board whose GM Notes name the
-              clicker's seat colour; the zone comes from that board's
-              zoneGuids (see player_board.lua).
+  +1 Coin     one 1-Gold coin into the clicking player's coins zone.
+  +1 Power    one 1-Power into the clicking player's power zone.
+              The player's board is the Player Board whose GM Notes are their
+              seat colour; the zone comes from its zoneGuids.
 ]]
 
---[[ Panel geometry.
+--[[ Panel geometry. Positions are object-local {x, y, z}, which TTS multiplies
+by the bag's scale; a bag is about 1 unit across. +z is the bag's front, so the
+panel sits below it on the table.
 
-Object-local {x, y, z}: TTS multiplies these by the bag's own scale, and a bag
-is about 1 unit across, so these numbers are sized for a bag rather than a
-card. +z is toward the bag's front, so the panel hangs BELOW it on the table.
-
-TTS rasterises button text at font_size then shrinks the drawn result by
-scale, so a big font with a small scale gives sharper text than the reverse.
-SHARPNESS is that multiplier; every horizontal measurement here is in VISIBLE
-local units and converted at the last moment by unitsToPx(). Same trick as
-PANEL in tiletoken_importer.lua and LAYOUT in global.lua.
+TTS rasterises button text at font_size and then shrinks it by scale, so a big
+font at a small scale looks sharper than the reverse. SHARPNESS is that
+multiplier. Horizontal measurements here are in visible local units and get
+converted by unitsToPx().
 ]]
 PANEL = {
   SHARPNESS = 4,
@@ -61,13 +46,11 @@ PANEL = {
 
   -- How wide row 2 is, in object-local units; the bars share it evenly.
   SPAN_X = 6.8,
-  WIDE_GAP = 0.2,           -- gap between total bars, LOCAL units
+  WIDE_GAP = 0.2,           -- gap between total bars, local units
 
-  --[[ Pre-shrink pixels per local unit, at BTN_SCALE.
-
-  createButton's `width` is not in local units and the API does not give the
-  conversion, so this is measured rather than derived (~650).
-  ]]
+  -- Button pixels per local unit at BTN_SCALE, before shrinking. createButton's
+  -- width isn't in local units and the API doesn't say how they relate, so this
+  -- was measured.
   PX_PER_UNIT = 650,
 
   ACTION_W = 1500,
@@ -85,14 +68,13 @@ PANEL = {
 --[[ The kinds of currency, each with its own conversion tree.
 
 `denoms` are the face values that exist, ascending. `breakdown` is what one
-piece becomes when broken down -- AUTHORED, not derived. Each entry is a
-{denomination -> count} mix that must sum to the piece's own value, verified
-at load by checkBreakdowns(). A value with no entry cannot be broken.
+piece becomes when broken down: a {denomination -> count} mix that has to add
+up to the piece's value (checkBreakdowns() checks at load). A value with no
+entry can't be broken.
 
-These are hand-chosen rather than computed: a greedy split would hand back
-2x Taol for a Dragon, and the intent here is a spread the player can actually
-spend, not the fewest pieces. Cash-up is the operation that minimises count;
-this is its opposite.
+The mixes are picked by hand rather than computed. A greedy split would turn
+a Dragon into 2 Taols and a Shard, where a spread of smaller pieces is more useful for
+making payments.
 
   Gold   Harbor Moon(100) -> 50, 25, 10, 10, 5
          Sun(50)          -> 25, 10, 5, 5, 5x 1
@@ -145,11 +127,9 @@ function onLoad()
   recount()
 end
 
---[[ Convert visible sizes into the supersampled numbers createButton wants.
-
-Returns font, width, height and a uniform scale vector. `extra` is an
-additional shrink on top of SHARPNESS -- BTN_SCALE, normally.
-]]
+-- Visible sizes -> the supersampled font, width, height and scale vector that
+-- createButton wants. `extra` shrinks further on top of SHARPNESS (normally
+-- BTN_SCALE).
 function sharp(font, width, height, extra)
   local k = PANEL.SHARPNESS
   local s = (extra or 1) / k
@@ -203,8 +183,8 @@ function buildPanel()
                color = kind.color, text = PANEL.TEXT_COLOR})
   end
 
-  -- Row 0: the grants, above the bag. Created LAST so refreshPanel's indices
-  -- for the total bars (2, 3, ...) are unchanged.
+  -- Row 0: the grants, above the bag. Created last so the total bars keep
+  -- indices 2, 3, ... for refreshPanel.
   f, w, h, sc = sharp(PANEL.ACTION_FONT, PANEL.ACTION_W, PANEL.ACTION_H,
                       PANEL.BTN_SCALE)
   for i, g in ipairs(GRANTS) do
@@ -220,13 +200,8 @@ function noop() end
 
 -- ----------------------------------------------------------------- counting ---
 
---[[ The kind and face value of a bag ENTRY (a plain table, not an Object),
-or nil when it is not currency.
-
-Tag first, GMNotes second: the tag says which tree it belongs to, and the
-notes carry its face value. Reads the same field goldDenominations() in
-global.lua does, so a piece minted for one system works in the other.
-]]
+-- The kind and face value of a bag entry (a plain table, not an Object), or nil
+-- if it isn't currency. The tag gives the kind and the GM Notes the value.
 function entryKind(entry)
   local tags = {}
   for _, t in ipairs(entry.tags or {}) do tags[t] = true end
@@ -241,14 +216,11 @@ function entryKind(entry)
   return nil
 end
 
---[[ Rebuild COUNTS from what is actually in the bag and redraw.
+--[[ Rebuilds COUNTS from what's in the bag and redraws. A full recount rather
+than a running tally, since pieces can also leave the bag, get deleted by another
+script, or arrive mid-conversion.
 
-Deliberately a full recount rather than an increment: an item can leave the
-bag, be deleted by another script, or arrive while this one is busy, and a
-running tally would drift from the truth with no way to notice.
-
-Returns tag -> total value, and the number of pieces across all kinds.
-]]
+Returns tag -> total value, and the number of pieces across all kinds. ]]
 function recount()
   COUNTS = {}
   local totals, pieces = {}, 0
@@ -289,12 +261,9 @@ end
 
 -- --------------------------------------------------------------- conversion ---
 
---[[ The fewest pieces of `kind` adding up to `amount`.
-
-Greedy largest-first. That is only optimal for a "canonical" denomination set,
-and both of these (1, 5, 10, 25, 50, 100 and 1, 5, 10) are canonical -- the
-same reason it works for real coinage. Mirrors splitGold() in global.lua.
-]]
+--[[ The fewest pieces of `kind` adding up to `amount`. Greedy largest-first,
+which is only optimal for "canonical" denomination sets; both 1, 5, 10, 25, 50,
+100 and 1, 5, 10 are, like real coinage. ]]
 function fewestPieces(kind, amount)
   local counts, left = {}, amount
   for i = #kind.denoms, 1, -1 do
@@ -308,12 +277,8 @@ function fewestPieces(kind, amount)
   return counts, left
 end
 
---[[ Fail loudly at load if a breakdown does not conserve value.
-
-A table like this is edited by hand and a typo silently mints or burns money
-every time somebody clicks the button, which is exactly the kind of bug that
-surfaces three sessions later as "the bank is short".
-]]
+-- Warns at load if a breakdown doesn't add up to its piece's value, since the
+-- table is hand-edited and a typo would quietly mint or burn money on every click.
 function checkBreakdowns()
   for _, kind in ipairs(KINDS) do
     for value, mix in pairs(kind.breakdown) do
@@ -321,7 +286,7 @@ function checkBreakdowns()
       for d, n in pairs(mix) do sum = sum + d * n end
       if sum ~= value then
         broadcastToAll(string.format(
-          "Change Converter: %s breakdown[%d] sums to %d, not %d -- "
+          "Change Converter: %s breakdown[%d] sums to %d, not %d. "
           .. "Break-down would alter the money supply.",
           kind.label, value, sum, value), {1, 0.4, 0.4})
       end
@@ -329,12 +294,9 @@ function checkBreakdowns()
   end
 end
 
---[[ Where converted change is laid out, in front of the converter.
-
-+z is the bag's front, the same side the button panel is on, so the payout
-lands clear of the bag itself and of the panel's far edge. Pieces march along
-+x and wrap onto a new row away from the bag.
-]]
+--[[ Where converted change is laid out: in front of the bag (+z, the panel's
+side), past the panel's far edge. Pieces run along +x and wrap onto new rows
+further from the bag. ]]
 PAYOUT = {
   START_X = -3.0,
   START_Z = 4.7,
@@ -354,12 +316,9 @@ function payoutPosition(n)
   })
 end
 
---[[ Convert everything in the bag and lay the change out in front of it.
-
+--[[ Converts everything in the bag and lays the change out in front of it.
 `plan` maps tag -> {value -> how many to hand back}. The currency inside is
-destroyed first, so a plan is absolute, not a delta -- the converter ends up
-empty and the player picks their change up off the table.
-]]
+destroyed first, so the plan is the whole result, and the bag ends up empty. ]]
 function applyPlan(plan, summary, before)
   local bag = getObjectFromGUID(SOURCE_BAG_GUID)
   if bag == nil then
@@ -391,24 +350,16 @@ function applyPlan(plan, summary, before)
   mintStep(bag, queue, 1, summary, before, 0)
 end
 
---[[ Clone one piece out of the source bag per step and lay it in front.
-
-CLONES rather than takes: the source bag is a finite stock shared with
-global.lua's spawnCopyFromBag, so removing pieces from it would drain the bank
-every time somebody made change. The take -> wait -> clone -> put-back dance
-mirrors spawnCopyFromBag exactly, including waiting for the original to
-finish spawning before cloning it.
-
-Sequential rather than a loop: takeObject is async, and firing dozens at once
-against the same container drops objects on the floor.
-]]
+--[[ Clones one piece out of the source bag per step and lays it in front.
+Pieces are cloned and the original put back (see cloneFromBag), so the source
+bag keeps its stock. One per step because takeObject is async, and many at
+once against one bag drops pieces. ]]
 function mintStep(bag, queue, index, summary, before, placed)
   if index > #queue then
     Wait.frames(function()
       recount()
-      -- "Converted 37 Gold, 6 Power: 12 -> 6 pieces" -- the value is
-      -- unchanged by design, so the interesting number is how many pieces it
-      -- now takes to hold it.
+      -- "Converted 37 Gold, 6 Power: 12 -> 6 pieces". The value doesn't
+      -- change, so the piece count is what's reported.
       broadcastToAll(string.format("Converted %s: %d -> %d piece%s",
                                    summary, before, placed,
                                    placed == 1 and "" or "s"),
@@ -589,7 +540,7 @@ function pumpGrants()
   if zone == nil then
     broadcastToColor(hasBoard
       and ("Your player board has no " .. grant.zone .. " zone.")
-      or ("No player board for " .. color .. " -- set its GM Notes to '"
+      or ("No player board for " .. color .. ". Set its GM Notes to '"
           .. color .. "'."), color, warn)
     return pumpGrants()
   end
