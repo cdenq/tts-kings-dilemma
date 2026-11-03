@@ -1,0 +1,5 @@
+<!-- tts: c2b455 -->
+<!-- Bag mesh is 2.5 x 2 x 1.95 unscaled at scale 1.325, turned 180 degrees, so object UI x/y point screen-left/down.
+     rotation 0 0 180 turns the text back upright; scale 0.32 = 0.426 / 1.325 matches the other boxes' size.
+     position y -181 is screen-up, ~1.2 table units past the bag's far edge; z -210 is level with its top (2.0). -->
+<Inputfield id= "Input" onEndEdit= "CardSearch" height= "300" width= "1500" rotation= "0 0 180" scale= "0.32 0.32 0.32" textAlignment="MiddleCenter" placeholder= "Sticker Letter" position = "0 -181 -40"  fontSize= "180" > </Inputfield>

@@ -1,0 +1,5 @@
+<!-- tts: 6acf69 -->
+<!-- Bag mesh is 4.2 x 2 x 2.8 unscaled at scale 1, turned 180 degrees, so object UI x/y point screen-left/down.
+     rotation 0 0 180 turns the text back upright; position y -250 is screen-up, ~1.2 table units past the
+     bag's far edge, and z -190 sits level with the bag's top (1.85). 100 UI units = 1 table unit here. -->
+<Inputfield id= "Input" onEndEdit= "CardSearch" height= "300" width= "1500" rotation= "0 0 180" scale= "0.426 0.426 0.426" textAlignment="MiddleCenter" placeholder= "Sticker Number" position = "0 -250 -40"  fontSize= "180" > </Inputfield>

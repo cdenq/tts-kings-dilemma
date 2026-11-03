@@ -1,0 +1,5 @@
+<!-- tts: 531d8d -->
+<!-- Object UI scales with the bag (scale 0.19 x 0.07 x 0.098); 100 UI units = 1 unscaled bag unit.
+     scale undoes the bag's scale so the box matches its old size on the search block.
+     position matches the envelope box in table units (y 3300 there = 4750 here, since this bag is shorter in Z). -->
+<Inputfield id= "Input" onEndEdit= "CardSearch" height= "300" width= "1500" scale= "2.24 4.32 6" textAlignment="MiddleCenter" placeholder= "Sticker Number" position = "0 4750 -1300"  fontSize= "180" > </Inputfield>

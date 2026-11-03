@@ -1,0 +1,2 @@
+-- tts: 298691
+-- sync:include lib/score_sheet.lua
