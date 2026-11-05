@@ -487,10 +487,10 @@ end
 --[[ The +1 buttons above the bag. `zone` is the Player Board zone role the
 piece lands in (ZONE_ROLES in player_board.lua). ]]
 GRANTS = {
-  {fn = "grantCoinClick", label = "+1 Coin", tag = "Gold", zone = "coins",
-   tooltip = "Put 1 Gold in your player board's coins zone."},
-  {fn = "grantPowerClick", label = "+1 Power", tag = "Power", zone = "power",
-   tooltip = "Put 1 Power in your player board's power zone."},
+  {fn = "grantCoinClick", label = "+1 Coin", noun = "coin", tag = "Gold",
+   zone = "coins", tooltip = "Put 1 Gold in your player board's coins zone."},
+  {fn = "grantPowerClick", label = "+1 Power", noun = "Power", tag = "Power",
+   zone = "power", tooltip = "Put 1 Power in your player board's power zone."},
 }
 GRANT_VALUE = 1
 
@@ -557,6 +557,9 @@ function pumpGrants()
 
   busy = true
   cloneFromBag(bag, guid, zone.getPosition() + Vector(0, 1, 0), function()
+    broadcastToAll(string.format("%s gains %d %s.", color,
+                                 GRANT_VALUE, grant.noun),
+                   stringColorToRGB(color))
     busy = false
     pumpGrants()
   end)

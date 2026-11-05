@@ -3,7 +3,7 @@
 -- Secret Agenda draft.
 --   Starting phase (no player remembered: after Cleanup, which calls
 --   resetDraft, or on a fresh object): clicking a color deals that player one
---   random card per seated player; the rest stay in the bag.
+--   random card per seated player, plus one extra; the rest stay in the bag.
 --   After that, clicking a color moves the Secret Agenda cards still in the
 --   last-clicked player's hand to the clicked player. A player keeps their pick
 --   by taking it out of their hand before the next click.
@@ -65,13 +65,14 @@ function passTo(color)
 	-- Starting phase: deal from the bag.
 	if lastColor == nil then
 		local players = seatedPlayerCount()
-		if #self.getObjects() <= players then
-			printToAll("Secret Agendas: the bag needs more than " .. players
+		local cards = players + 1
+		if #self.getObjects() <= cards then
+			printToAll("Secret Agendas: the bag needs more than " .. cards
 				.. " cards to start a draft for " .. players .. " players.", {1, 0.5, 0.5})
 			return
 		end
 		self.shuffle()
-		self.deal(players, color)
+		self.deal(cards, color)
 		lastColor = color
 		return
 	end
